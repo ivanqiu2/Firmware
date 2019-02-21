@@ -4,9 +4,7 @@
 # (px4-alias.sh is expected to be in the PATH)
 . px4-alias.sh
 
-uorb start
-muorb start
-
+m
 # We need to wait until the DSP side is ready before
 # sending commands with qshell.
 sleep 1

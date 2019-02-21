@@ -1,6 +1,6 @@
 ############################################################################
 #
-#   Copyright (c) 2015 PX4 Development Team. All rights reserved.
+#   Copyright (c) 2019 PX4 Development Team. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,25 +31,12 @@
 #
 ############################################################################
 
-if(NOT "${PX4_BOARD}" MATCHES "px4_io") # TODO: fix this hack (move uORB to platform layer)
-
-	# this includes the generated topics directory
-	include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-	px4_add_library(modules__uORB
-			Publication.cpp
-			Subscription.cpp
-			uORB.cpp
-			uORBDeviceMaster.cpp
-			uORBDeviceNode.cpp
-			uORBManager.cpp
-			uORBUtils.cpp
-			uORBStart.cpp
-			)
-
-	target_link_libraries(modules__uORB PRIVATE cdev)
-	
-	if(PX4_TESTING)
-		add_subdirectory(uORB_tests)
-	endif()
-endif()
+px4_add_module(
+	MODULE systemcmds__uorb
+	MAIN uorb
+	STACK_MAIN 2100
+	SRCS
+		uORBMain.cpp
+	DEPENDS
+		modules__uORB
+	)

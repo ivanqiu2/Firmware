@@ -31,81 +31,68 @@
  *
  ****************************************************************************/
 
-#include "px4_init.h"
+#include <string.h>
 
-#include <px4_config.h>
-#include <px4_defines.h>
-#include <drivers/drv_hrt.h>
-#include <lib/parameters/param.h>
-#include <systemlib/cpuload.h>
-#include <uORB/uORB.h>
+#include "uORB.h"
 
-#include <fcntl.h>
+#include "uORBManager.hpp"
+#include "uORBCommon.hpp"
 
+#include <px4_log.h>
+#include <px4_module.h>
 
-#include "platform/cxxinitialize.h"
+static uORB::DeviceMaster *g_dev = nullptr;
 
-int px4_platform_init(void)
+int uorb_start(void)
 {
-
-#if defined(CONFIG_HAVE_CXX) && defined(CONFIG_HAVE_CXXINITIALIZE)
-	/* run C++ ctors before we go any further */
-	up_cxxinitialize();
-
-#	if defined(CONFIG_SYSTEM_NSH_CXXINITIALIZE)
-#  		error CONFIG_SYSTEM_NSH_CXXINITIALIZE Must not be defined! Use CONFIG_HAVE_CXX and CONFIG_HAVE_CXXINITIALIZE.
-#	endif
-
-#else
-#  error platform is dependent on c++ both CONFIG_HAVE_CXX and CONFIG_HAVE_CXXINITIALIZE must be defined.
-#endif
-
-
-#if !defined(CONFIG_DEV_CONSOLE) && defined(CONFIG_DEV_NULL)
-
-	/* Support running nsh on a board with out a console
-	 * Without this the assumption that the fd 0..2 are
-	 * std{in..err} will be wrong. NSH will read/write to the
-	 * fd it opens for the init script or nested scripts assigned
-	 * to fd 0..2.
-	 *
-	 */
-
-	int fd = open("/dev/null", O_RDWR);
-
-	if (fd == 0) {
-		/* Successfully opened /dev/null as stdin (fd == 0) */
-
-		(void)fs_dupfd2(0, 1);
-		(void)fs_dupfd2(0, 2);
-		(void)fs_fdopen(0, O_RDONLY,         NULL);
-		(void)fs_fdopen(1, O_WROK | O_CREAT, NULL);
-		(void)fs_fdopen(2, O_WROK | O_CREAT, NULL);
-
-	} else {
-		/* We failed to open /dev/null OR for some reason, we opened
-		 * it and got some file descriptor other than 0.
-		 */
-
-		if (fd > 0) {
-			(void)close(fd);
-		}
-
-		return -ENFILE;
+	if (g_dev != nullptr) {
+		PX4_WARN("already loaded");
+		/* user wanted to start uorb, its already running, no error */
+		return 0;
 	}
 
+	if (!uORB::Manager::initialize()) {
+		PX4_ERR("uorb manager alloc failed");
+		return -ENOMEM;
+	}
+
+	/* create the driver */
+	g_dev = uORB::Manager::get_instance()->get_device_master();
+
+	if (g_dev == nullptr) {
+		return -errno;
+	}
+
+#if !defined(__PX4_QURT) && !defined(__PX4_POSIX_EAGLE) && !defined(__PX4_POSIX_EXCELSIOR)
+	/* FIXME: this fails on Snapdragon (see https://github.com/PX4/Firmware/issues/5406),
+	 * so we disable logging messages to the ulog for now. This needs further investigations.
+	 */
+	px4_log_initialize();
 #endif
 
-	hrt_init();
+	return OK;
+}
 
-	param_init();
+int uorb_status(void)
+{
+	if (g_dev != nullptr) {
+		g_dev->printStatistics(true);
 
-	/* configure CPU load estimation */
-#ifdef CONFIG_SCHED_INSTRUMENTATION
-	cpuload_initialize_once();
-#endif
-
-	uorb_start();
+	} else {
+		PX4_INFO("uorb is not running");
+	}
 
 	return PX4_OK;
+}
+
+int uorb_top(char **topic_filter, int num_filters)
+{
+	if (g_dev != nullptr) {
+		g_dev->showTop(topic_filter, num_filters);
+
+	} else {
+		PX4_INFO("uorb is not running");
+	}
+
+	return OK;
 }

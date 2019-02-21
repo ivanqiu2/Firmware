@@ -121,6 +121,14 @@ enum ORB_PRIO {
 
 __BEGIN_DECLS
 
+
+/**
+ * Initialize the param backend. Call this on startup before calling any other methods.
+ */
+__EXPORT int		uorb_start(void);
+__EXPORT int		uorb_status(void);
+__EXPORT int		uorb_top(char **topic_filter, int num_filters);
+
 /**
  * ORB topic advertiser handle.
  *

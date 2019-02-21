@@ -31,25 +31,14 @@
 #
 ############################################################################
 
-if(NOT "${PX4_BOARD}" MATCHES "px4_io") # TODO: fix this hack (move uORB to platform layer)
-
-	# this includes the generated topics directory
-	include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-	px4_add_library(modules__uORB
-			Publication.cpp
-			Subscription.cpp
-			uORB.cpp
-			uORBDeviceMaster.cpp
-			uORBDeviceNode.cpp
-			uORBManager.cpp
-			uORBUtils.cpp
-			uORBStart.cpp
-			)
-
-	target_link_libraries(modules__uORB PRIVATE cdev)
-	
-	if(PX4_TESTING)
-		add_subdirectory(uORB_tests)
-	endif()
-endif()
+px4_add_module(
+	MODULE platform__uORB__uORB_tests
+	MAIN uorb_tests
+	STACK_MAIN 2048
+	PRIORITY "SCHED_PRIORITY_MAX"
+	SRCS
+		uORB_tests_main.cpp
+		uORBTest_UnitTest.cpp
+	DEPENDS
+		px4_platform_uorb
+	)

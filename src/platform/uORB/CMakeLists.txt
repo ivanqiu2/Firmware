@@ -31,12 +31,19 @@
 #
 ############################################################################
 
-px4_add_module(
-	MODULE modules__uORB__uORB_tests
-	MAIN uorb_tests
-	STACK_MAIN 2048
-	PRIORITY "SCHED_PRIORITY_MAX"
-	SRCS
-		uORB_tests_main.cpp
-		uORBTest_UnitTest.cpp
-	)
+px4_add_library(px4_platform_uorb
+		Publication.cpp
+		Subscription.cpp
+		uORB.cpp
+		uORBDeviceMaster.cpp
+		uORBDeviceNode.cpp
+		uORBManager.cpp
+		uORBUtils.cpp
+		uORBStart.cpp
+		)
+
+target_link_libraries(px4_platform_uorb PRIVATE cdev)
+
+if(PX4_TESTING)
+	add_subdirectory(uORB_tests)
+endif()

@@ -38,5 +38,5 @@ px4_add_module(
 	SRCS
 		uORBMain.cpp
 	DEPENDS
-		modules__uORB
+		px4_platform_uorb
 	)

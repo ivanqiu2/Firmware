@@ -83,6 +83,10 @@ Mission::on_inactive()
 		orb_check(_navigator->get_mission_sub(), &mission_sub_updated);
 
 		if (mission_sub_updated) {
+			/* Missions that do not explicitly configure ROI would not override
+			an existing ROI setting from previous missions */
+			_navigator->reset_vroi();
+
 			update_mission();
 
 			if (_mission_type == MISSION_TYPE_NONE && _mission.count > 0) {
